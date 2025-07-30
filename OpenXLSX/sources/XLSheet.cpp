@@ -1734,6 +1734,98 @@ XLTables& XLWorksheet::tables()
     return m_tables;
 }
 
+bool XLWorksheet::hasHyperlinks() const
+{
+    const auto node = xmlDocument().document_element().child("hyperlinks");
+
+    if(node.empty())
+    {
+        return false;
+    }
+
+    return !node.children().empty();
+}
+
+bool XLHyperlinks::valid() const
+{
+    return m_valid;
+}
+
+bool XLHyperlinks::empty() const 
+{
+    return m_links.empty();
+}
+
+const XLHyperlink* XLHyperlinks::findLinkByCellReference(const XLCellReference& cell) const
+{
+    const auto found = std::find_if(m_links.begin(), m_links.end(), [&](const XLHyperlink& link){
+        return link.ref == cell.address();
+    });
+
+    if(found == m_links.end())
+    {
+        return nullptr;
+    }
+    return std::addressof(*found);
+}
+
+std::vector<XLHyperlink>::iterator XLHyperlinks::begin()
+{
+    return m_links.begin();
+}
+
+std::vector<XLHyperlink>::iterator XLHyperlinks::end()
+{
+    return m_links.end();
+}
+
+std::vector<XLHyperlink>::const_iterator XLHyperlinks::begin() const
+{
+    return m_links.begin();
+}
+
+std::vector<XLHyperlink>::const_iterator XLHyperlinks::end() const
+{
+    return m_links.end();
+}
+
+XLHyperlinks::XLHyperlinks(const XMLNode& rootNode, std::vector<std::string_view> const & /*nodeOrder*/) : m_valid {true}
+{
+    const auto node = rootNode.child("hyperlinks");
+
+    //<hyperlink ref="B5" location="Structures!A1" display="Structures" xr:uid="{F6179B03-1A2E-48BB-A63C-9B5640AF1B65}"/>
+    for(auto hyperlinkNode = node.first_child_of_type(pugi::node_element);
+                         !hyperlinkNode.empty();
+                         hyperlinkNode = hyperlinkNode.next_sibling_of_type(pugi::node_element))
+    {
+        if (std::string_view(hyperlinkNode.name()) != "hyperlink") {
+            continue;
+        }
+
+        std::string ref = hyperlinkNode.attribute("ref").value();
+        std::string location = hyperlinkNode.attribute("location").value();
+        std::string display = hyperlinkNode.attribute("display").value();
+
+        XLHyperlink link {
+            .ref = ref,
+            .location = location,
+            .display = display
+        };
+
+        m_links.push_back(link);
+    }
+}
+
+const XLHyperlinks& XLWorksheet::hyperlinks() const
+{
+    if(!m_hyperlinks.valid())
+    {
+        m_hyperlinks = XLHyperlinks(xmlDocument().document_element(), m_nodeOrder);
+    }
+
+    return m_hyperlinks;
+}
+
 /**
  * @details perform a pattern matching on getXmlPath for (regex) .*xl/worksheets/sheet([0-9]*)\.xml$ and extract the numeric part \1
  */

@@ -858,6 +858,36 @@ namespace OpenXLSX
         const std::vector< std::string_view >& m_nodeOrder = XLWorksheetNodeOrder;  // worksheet XML root node required child sequence
     };
 
+    struct XLHyperlink {
+        std::string ref;
+        std::string location;
+        std::string display;
+    };
+
+    struct OPENXLSX_EXPORT XLHyperlinks
+    {
+        XLHyperlinks() = default;
+
+        explicit XLHyperlinks(const XMLNode& rootNode, std::vector<std::string_view> const & nodeOrder);
+
+        const XLHyperlink* findLinkByCellReference(const XLCellReference& cell) const;
+
+        bool valid() const;
+
+        bool empty() const;
+
+        std::vector<XLHyperlink>::iterator begin();
+        std::vector<XLHyperlink>::iterator end();
+
+        std::vector<XLHyperlink>::const_iterator begin() const;
+        std::vector<XLHyperlink>::const_iterator end() const;
+
+
+    private:
+        bool m_valid = false;
+        std::vector<XLHyperlink> m_links;
+    };
+
     /**
      * @brief A class encapsulating an Excel worksheet. Access to XLWorksheet objects should be via the workbook object.
      */
@@ -1261,6 +1291,10 @@ namespace OpenXLSX
          */
         XLTables& tables();
 
+        bool hasHyperlinks() const;
+
+        const XLHyperlinks& hyperlinks() const;
+
     private:
 
         /**
@@ -1314,6 +1348,7 @@ namespace OpenXLSX
         XLMergeCells    m_merges{};           /**< class handling the <mergeCells> */
         XLVmlDrawing    m_vmlDrawing{};       /**< class handling the worksheet VML drawing object */
         XLComments      m_comments{};         /**< class handling the worksheet comments */
+        mutable XLHyperlinks    m_hyperlinks{};
         XLTables        m_tables{};           /**< class handling the worksheet table settings */
         const std::vector< std::string_view >& m_nodeOrder = XLWorksheetNodeOrder;  // worksheet XML root node required child sequence
     };
